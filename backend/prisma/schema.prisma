@@ -1,0 +1,464 @@
+// HostelHub Prisma Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum UserRole {
+  STUDENT
+  WARDEN
+  MESS_INCHARGE
+}
+
+enum StudentType {
+  HOSTELER
+  DAY_SCHOLAR
+}
+
+enum GenderAllowed {
+  MALE
+  FEMALE
+  COED
+}
+
+enum RoomType {
+  AC
+  NON_AC
+}
+
+enum ComplaintCategory {
+  ELECTRICAL
+  PLUMBING
+  CARPENTRY
+  CLEANLINESS
+  INTERNET
+  MESS
+  OTHER
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum GuestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MealType {
+  NONE
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACKS
+}
+
+enum NoticeCategory {
+  GENERAL
+  HOSTEL
+  MESS
+  URGENT
+  EVENT
+}
+
+enum AudienceType {
+  ALL
+  HOSTELERS
+  DAY_SCHOLARS
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum NotificationType {
+  SYSTEM
+  LEAVE
+  GUEST
+  COMPLAINT
+  NOTICE
+  MESS
+}
+
+// ----------------------------------------------------
+// MODELS
+// ----------------------------------------------------
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(STUDENT)
+  isActive     Boolean   @default(true)
+  refreshToken String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relationships
+  studentProfile      StudentProfile?
+  bedAllocationsGiven BedAllocation[]      @relation("AllocatedByAdmin")
+  reviewedLeaves      LeaveRequest[]       @relation("ReviewedByAdmin")
+  reviewedGuests      GuestRequest[]       @relation("ReviewedByAdmin")
+  publishedNotices    Notice[]             @relation("PublishedByAdmin")
+  updatedMessMenus    MessMenu[]           @relation("UpdatedByMessIncharge")
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @unique @db.Uuid
+  rollNumber     String      @unique
+  firstName      String      @db.VarChar(100)
+  lastName       String      @db.VarChar(100)
+  phone          String      @db.VarChar(20)
+  studentType    StudentType @default(HOSTELER)
+  department     String      @db.VarChar(100)
+  yearOfStudy    Int
+  guardianName   String      @db.VarChar(100)
+  guardianPhone  String      @db.VarChar(20)
+  guardianEmail  String?     @db.VarChar(255)
+  isAllocated    Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bedAllocation  BedAllocation?
+  complaints     Complaint[]
+  leaveRequests  LeaveRequest[]
+  guestRequests  GuestRequest[]
+  messFeedbacks  MessFeedback[]
+  presenceLogs   CampusPresenceLog[]
+
+  @@index([rollNumber])
+  @@index([studentType])
+  @@map("student_profiles")
+}
+
+model Hostel {
+  id            String        @id @default(uuid()) @db.Uuid
+  name          String        @unique @db.VarChar(100)
+  code          String        @unique @db.VarChar(20)
+  genderAllowed GenderAllowed
+  totalFloors   Int
+  description   String?       @db.Text
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  floors        Floor[]
+  notices       Notice[]
+
+  @@map("hostels")
+}
+
+model Floor {
+  id          String   @id @default(uuid()) @db.Uuid
+  hostelId    String   @db.Uuid
+  floorNumber Int
+  floorName   String   @db.VarChar(50)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  hostel      Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+  rooms       Room[]
+
+  @@unique([hostelId, floorNumber])
+  @@map("floors")
+}
+
+model Room {
+  id          String    @id @default(uuid()) @db.Uuid
+  floorId     String    @db.Uuid
+  roomNumber  String    @db.VarChar(20)
+  capacity    Int
+  occupancy   Int       @default(0)
+  roomType    RoomType  @default(NON_AC)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  floor       Floor     @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  allocations BedAllocation[]
+
+  @@unique([floorId, roomNumber])
+  @@map("rooms")
+}
+
+model BedAllocation {
+  id                 String         @id @default(uuid()) @db.Uuid
+  studentProfileId   String         @unique @db.Uuid
+  roomId             String         @db.Uuid
+  bedLabel           String         @db.VarChar(10)
+  allocatedFrom      DateTime       @default(now())
+  allocatedTo        DateTime?
+  isActive           Boolean        @default(true)
+  allocatedByAdminId String         @db.Uuid
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Restrict)
+  room               Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  allocatedBy        User           @relation("AllocatedByAdmin", fields: [allocatedByAdminId], references: [id])
+
+  @@index([roomId])
+  @@index([isActive])
+  @@map("bed_allocations")
+}
+
+model Complaint {
+  id               String              @id @default(uuid()) @db.Uuid
+  studentProfileId String              @db.Uuid
+  title            String              @db.VarChar(150)
+  description      String              @db.Text
+  category         ComplaintCategory
+  status           ComplaintStatus     @default(SUBMITTED)
+  priority         ComplaintPriority   @default(MEDIUM)
+  assignedTo       String?             @db.VarChar(100)
+  resolutionNotes  String?             @db.Text
+  resolvedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  studentProfile   StudentProfile      @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  attachments      ComplaintAttachment[]
+
+  @@index([studentProfileId])
+  @@index([status])
+  @@index([category])
+  @@map("complaints")
+}
+
+model ComplaintAttachment {
+  id          String    @id @default(uuid()) @db.Uuid
+  complaintId String    @db.Uuid
+  fileUrl     String    @db.Text
+  fileType    String    @db.VarChar(50)
+  createdAt   DateTime  @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+  @@map("complaint_attachments")
+}
+
+model LeaveRequest {
+  id                 String         @id @default(uuid()) @db.Uuid
+  studentProfileId   String         @db.Uuid
+  startDate          DateTime
+  endDate            DateTime
+  reason             String         @db.Text
+  destination        String         @db.VarChar(255)
+  emergencyContact   String         @db.VarChar(20)
+  status             LeaveStatus    @default(PENDING)
+  reviewedByAdminId  String?        @db.Uuid
+  reviewedAt         DateTime?
+  remarks            String?        @db.Text
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  reviewedBy         User?          @relation("ReviewedByAdmin", fields: [reviewedByAdminId], references: [id])
+
+  @@index([studentProfileId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leave_requests")
+}
+
+model GuestRequest {
+  id                   String         @id @default(uuid()) @db.Uuid
+  hostStudentProfileId String         @db.Uuid
+  guestName            String         @db.VarChar(100)
+  relationship         String         @db.VarChar(50)
+  visitDate            DateTime       @db.Date
+  requestedMeal        MealType       @default(NONE)
+  numberOfGuests       Int            @default(1)
+  reason               String         @db.Text
+  status               GuestStatus    @default(PENDING)
+  passNumber           String?        @unique @db.VarChar(30)
+  reviewedByAdminId    String?        @db.Uuid
+  reviewedAt           DateTime?
+  remarks              String?        @db.Text
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  hostStudent          StudentProfile @relation(fields: [hostStudentProfileId], references: [id], onDelete: Cascade)
+  reviewedBy           User?          @relation("ReviewedByAdmin", fields: [reviewedByAdminId], references: [id])
+  guestPass            GuestPass?
+
+  @@index([hostStudentProfileId])
+  @@index([visitDate])
+  @@index([status])
+  @@map("guest_requests")
+}
+
+model GuestPass {
+  id               String       @id @default(uuid()) @db.Uuid
+  guestRequestId   String       @unique @db.Uuid
+  passCode         String       @unique @db.VarChar(30)
+  validOn          DateTime     @db.Date
+  isVerifiedAtGate Boolean      @default(false)
+  verifiedAt       DateTime?
+  createdAt        DateTime     @default(now())
+
+  guestRequest     GuestRequest @relation(fields: [guestRequestId], references: [id], onDelete: Cascade)
+
+  @@index([passCode])
+  @@map("guest_passes")
+}
+
+model Notice {
+  id                 String         @id @default(uuid()) @db.Uuid
+  title              String         @db.VarChar(200)
+  content            String         @db.Text
+  category           NoticeCategory @default(GENERAL)
+  targetAudience     AudienceType   @default(ALL)
+  targetHostelId     String?        @db.Uuid
+  isPinned           Boolean        @default(false)
+  publishedByAdminId String         @db.Uuid
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  publishedBy        User           @relation("PublishedByAdmin", fields: [publishedByAdminId], references: [id])
+  targetHostel       Hostel?        @relation(fields: [targetHostelId], references: [id])
+
+  @@index([targetAudience])
+  @@index([category])
+  @@index([isPinned])
+  @@map("notices")
+}
+
+model MessMenu {
+  id                 String    @id @default(uuid()) @db.Uuid
+  dayOfWeek          DayOfWeek
+  mealType           MealType
+  items              String    @db.Text
+  specialNotes       String?   @db.Text
+  updatedByUserId    String    @db.Uuid
+  updatedAt          DateTime  @updatedAt
+
+  updatedBy          User      @relation("UpdatedByMessIncharge", fields: [updatedByUserId], references: [id])
+
+  @@unique([dayOfWeek, mealType])
+  @@map("mess_menus")
+}
+
+model MessFeedback {
+  id                 String         @id @default(uuid()) @db.Uuid
+  studentProfileId   String         @db.Uuid
+  mealDate           DateTime       @db.Date
+  mealType           MealType
+  rating             Int            // 1 to 5
+  foodQualityRating  Int            // 1 to 5
+  cleanlinessRating  Int            // 1 to 5
+  comment            String?        @db.Text
+  createdAt          DateTime       @default(now())
+
+  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([studentProfileId])
+  @@index([mealDate])
+  @@map("mess_feedbacks")
+}
+
+model CampusGeofence {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(100)
+  latitude     Decimal  @db.Decimal(10, 8)
+  longitude    Decimal  @db.Decimal(11, 8)
+  radiusMeters Float
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("campus_geofences")
+}
+
+model CampusPresenceLog {
+  id                 String         @id @default(uuid()) @db.Uuid
+  studentProfileId   String         @db.Uuid
+  latitude           Decimal        @db.Decimal(10, 8)
+  longitude          Decimal        @db.Decimal(11, 8)
+  accuracyMeters     Float?
+  calculatedDistance Float
+  isInside           Boolean
+  recordedAt         DateTime       @default(now())
+
+  studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([studentProfileId])
+  @@index([isInside])
+  @@index([recordedAt])
+  @@map("campus_presence_logs")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  title     String           @db.VarChar(200)
+  message   String           @db.Text
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  data      String?          @db.Text // JSON metadata string
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String   @db.VarChar(100)
+  entityId   String?  @db.VarChar(100)
+  details    String?  @db.Text
+  ipAddress  String?  @db.VarChar(50)
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@map("audit_logs")
+}

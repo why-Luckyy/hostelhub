@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Keep example files
+!.env.example
+
+# Production & Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Expo & React Native
+.expo/
+.expo-shared/
+web-build/
+.metro-health-check*
+
+# Android / iOS Native artifacts
+android/.gradle/
+android/app/build/
+android/build/
+ios/Pods/
+ios/build/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.apk
+*.aab
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# IDE & Editor files
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+desktop.ini
