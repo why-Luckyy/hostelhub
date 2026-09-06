@@ -36,6 +36,8 @@ import { NoticeManagementScreen } from '../warden/NoticeManagementScreen';
 import { CreateEditNoticeScreen } from '../warden/CreateEditNoticeScreen';
 import { FineManagementScreen } from '../warden/FineManagementScreen';
 import { AssignFineScreen } from '../warden/AssignFineScreen';
+import { CampusPresenceScreen } from '../presence/CampusPresenceScreen';
+import { CampusPresenceDashboardScreen } from '../presence/CampusPresenceDashboardScreen';
 import { Notice } from '../../types';
 
 type ActiveScreen =
@@ -60,7 +62,9 @@ type ActiveScreen =
   | 'WARDEN_NOTICES'
   | 'WARDEN_CREATE_EDIT_NOTICE'
   | 'WARDEN_FINES'
-  | 'WARDEN_ASSIGN_FINE';
+  | 'WARDEN_ASSIGN_FINE'
+  | 'CAMPUS_PRESENCE'
+  | 'WARDEN_CAMPUS_PRESENCE';
 
 interface MyAllocationResponse {
   isAllocated: boolean;
@@ -319,6 +323,14 @@ export const HomeScreen: React.FC = () => {
         onSuccess={() => setCurrentScreen('WARDEN_FINES')}
       />
     );
+  }
+
+  if (currentScreen === 'CAMPUS_PRESENCE') {
+    return <CampusPresenceScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'WARDEN_CAMPUS_PRESENCE') {
+    return <CampusPresenceDashboardScreen onBack={() => setCurrentScreen('HOME')} />;
   }
 
   return (
@@ -756,11 +768,53 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* Phase 6 Roadmap Banner */}
+        {/* Phase 7 Campus Presence Hub for Students */}
+        {user?.role === 'STUDENT' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>📍 Campus Presence & Location</Text>
+            <Text style={styles.hubSubtitle}>
+              Verify physical presence inside the university perimeter using GPS location services.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('CAMPUS_PRESENCE')}
+              >
+                <Text style={styles.actionCardIcon}>📍</Text>
+                <Text style={styles.actionCardTitle}>Campus Presence</Text>
+                <Text style={styles.actionCardDesc}>Verify Inside / Outside status</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 7 Campus Presence & Geofence Hub for Warden */}
+        {user?.role === 'WARDEN' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>📍 Campus Presence & Geofencing Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Live student presence analytics, verified headcount, and campus geofence perimeter management.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('WARDEN_CAMPUS_PRESENCE')}
+              >
+                <Text style={styles.actionCardIcon}>📊</Text>
+                <Text style={styles.actionCardTitle}>Presence Overview</Text>
+                <Text style={styles.actionCardDesc}>Inside / Outside counts & logs</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 7 Roadmap Banner */}
         <View style={styles.roadmapCard}>
-          <Text style={styles.roadmapTitle}>⚖️ Phase 6 — Complaints, Notices & Fines Live</Text>
+          <Text style={styles.roadmapTitle}>📍 Phase 7 — Campus Presence & Geofencing Live</Text>
           <Text style={styles.roadmapText}>
-            Strict single-direction complaint lifecycle (PENDING → SOLVED), official multi-audience notice board with priority pinning, and disciplinary fine tracking with in-app notifications and audit logging.
+            Server-authoritative GPS verification, circular campus geofencing, student presence verification history, and real-time residential campus safety analytics.
           </Text>
           <Text style={styles.roadmapSubtext}>
             HostelHub v1.0 • Comprehensive Campus Living Platform

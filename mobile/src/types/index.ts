@@ -285,4 +285,86 @@ export interface Fine {
   };
 }
 
+// ----------------------------------------------------
+// PHASE 7 TYPES: CAMPUS PRESENCE & GEOFENCING
+// ----------------------------------------------------
+
+export interface CampusGeofence {
+  id: string;
+  name: string;
+  latitude: number | string;
+  longitude: number | string;
+  radiusMeters: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CampusPresenceLog {
+  id: string;
+  studentProfileId: string;
+  latitude: number | string;
+  longitude: number | string;
+  accuracyMeters?: number | null;
+  calculatedDistance: number;
+  isInside: boolean;
+  recordedAt: string;
+  studentProfile?: {
+    id: string;
+    rollNumber: string;
+    firstName: string;
+    lastName: string;
+    department: string;
+    studentType?: StudentType;
+  };
+}
+
+export interface PresenceVerificationResult {
+  id: string;
+  isInside: boolean;
+  calculatedDistance: number;
+  distanceFromBoundary: number;
+  accuracyMeters?: number | null;
+  recordedAt: string;
+  geofence: {
+    id: string;
+    name: string;
+    radiusMeters: number;
+  };
+}
+
+export interface PresenceStatusResponse {
+  hasVerified: boolean;
+  status: 'INSIDE' | 'OUTSIDE' | null;
+  latestLog?: {
+    id: string;
+    isInside: boolean;
+    calculatedDistance: number;
+    distanceFromBoundary: number;
+    accuracyMeters?: number | null;
+    recordedAt: string;
+  } | null;
+  geofence: {
+    id: string;
+    name: string;
+    radiusMeters: number;
+  };
+}
+
+export interface PresenceSummary {
+  insideCount: number;
+  outsideCount: number;
+  verifiedCount: number;
+  unverifiedCount: number;
+  totalRegisteredStudents: number;
+  activeGeofence: {
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    radiusMeters: number;
+    isActive: boolean;
+  };
+}
+
+
 

@@ -14,6 +14,7 @@ import messRoutes from './messRoutes';
 import complaintRoutes from './complaintRoutes';
 import noticeRoutes from './noticeRoutes';
 import fineRoutes from './fineRoutes';
+import presenceRoutes from './presenceRoutes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/mess', messRoutes);
 router.use('/complaints', complaintRoutes);
 router.use('/notices', noticeRoutes);
 router.use('/fines', fineRoutes);
+router.use('/presence', presenceRoutes);
 
 export default router;
