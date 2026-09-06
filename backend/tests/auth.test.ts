@@ -14,8 +14,24 @@ describe('Authentication, Database & RBAC End-to-End Suite', () => {
 
   const testHostelerEmail = `hosteler.test.${Date.now()}@hostelhub.edu`;
   const testDayScholarEmail = `dayscholar.test.${Date.now()}@hostelhub.edu`;
+  const testInactiveEmail = `inactive.user.test.${Date.now()}@hostelhub.edu`;
   const testRollHosteler = `ROLL_H_${Date.now()}`;
   const testRollDayScholar = `ROLL_DS_${Date.now()}`;
+
+  beforeAll(async () => {
+    // Clean up any lingering disposable test accounts before running
+    try {
+      await prisma.user.deleteMany({
+        where: {
+          email: {
+            in: [testHostelerEmail, testDayScholarEmail, testInactiveEmail, 'inactive.user.test@hostelhub.edu'],
+          },
+        },
+      });
+    } catch (e) {
+      // Ignore initial cleanup errors
+    }
+  });
 
   afterAll(async () => {
     // Clean up dynamic test accounts created during test execution
@@ -23,7 +39,7 @@ describe('Authentication, Database & RBAC End-to-End Suite', () => {
       await prisma.user.deleteMany({
         where: {
           email: {
-            in: [testHostelerEmail, testDayScholarEmail, 'inactive.user.test@hostelhub.edu'],
+            in: [testHostelerEmail, testDayScholarEmail, testInactiveEmail, 'inactive.user.test@hostelhub.edu'],
           },
         },
       });
@@ -221,26 +237,36 @@ describe('Authentication, Database & RBAC End-to-End Suite', () => {
     it('should reject disabled/inactive users with 403 Forbidden', async () => {
       // Create temporary disabled user
       const disabledPasswordHash = await bcrypt.hash('Disabled@123', 10);
-      await prisma.user.deleteMany({ where: { email: 'inactive.user.test@hostelhub.edu' } });
+      await prisma.user.deleteMany({
+        where: {
+          email: { in: [testInactiveEmail, 'inactive.user.test@hostelhub.edu'] },
+        },
+      });
       const disabledUser = await prisma.user.create({
         data: {
-          email: 'inactive.user.test@hostelhub.edu',
+          email: testInactiveEmail,
           passwordHash: disabledPasswordHash,
           role: ROLES.STUDENT,
           isActive: false, // Disabled
         },
       });
 
-      const res = await request(app).post('/api/v1/auth/login').send({
-        email: 'inactive.user.test@hostelhub.edu',
-        password: 'Disabled@123',
-      });
+      try {
+        const res = await request(app).post('/api/v1/auth/login').send({
+          email: testInactiveEmail,
+          password: 'Disabled@123',
+        });
 
-      expect(res.status).toBe(403);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toContain('Account is disabled');
-
-      await prisma.user.delete({ where: { id: disabledUser.id } });
+        expect(res.status).toBe(403);
+        expect(res.body.success).toBe(false);
+        expect(res.body.message).toContain('Account is disabled');
+      } finally {
+        await prisma.user.deleteMany({
+          where: {
+            email: { in: [testInactiveEmail, 'inactive.user.test@hostelhub.edu'] },
+          },
+        });
+      }
     });
   });
 

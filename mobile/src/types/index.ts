@@ -191,3 +191,98 @@ export interface MessDashboardData {
   }>;
 }
 
+// ----------------------------------------------------
+// PHASE 6 TYPES: COMPLAINTS, NOTICES, FINES
+// ----------------------------------------------------
+
+export type ComplaintCategory =
+  | 'ELECTRICAL'
+  | 'PLUMBING'
+  | 'CARPENTRY'
+  | 'CLEANLINESS'
+  | 'INTERNET'
+  | 'MESS'
+  | 'OTHER';
+
+export type ComplaintPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export type ComplaintStatus = 'PENDING' | 'SOLVED';
+
+export interface Complaint {
+  id: string;
+  studentProfileId: string;
+  title: string;
+  description: string;
+  category: ComplaintCategory;
+  status: ComplaintStatus;
+  priority: ComplaintPriority;
+  assignedTo?: string | null;
+  resolutionNotes?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  studentProfile?: {
+    id: string;
+    rollNumber: string;
+    firstName: string;
+    lastName: string;
+    department: string;
+    studentType: StudentType;
+  };
+}
+
+export type NoticeCategory = 'GENERAL' | 'HOSTEL' | 'MESS' | 'URGENT' | 'EVENT';
+
+export type AudienceType = 'ALL' | 'HOSTELERS' | 'DAY_SCHOLARS';
+
+export interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  category: NoticeCategory;
+  targetAudience: AudienceType;
+  targetHostelId?: string | null;
+  isPinned: boolean;
+  publishedByAdminId: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedBy?: {
+    id: string;
+    email: string;
+    role: UserRole;
+  };
+  targetHostel?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+}
+
+export type FineStatus = 'UNPAID' | 'PAID';
+
+export interface Fine {
+  id: string;
+  studentProfileId: string;
+  amount: string | number;
+  reason: string;
+  status: FineStatus;
+  assignedByAdminId: string;
+  assignedAt: string;
+  paidAt?: string | null;
+  updatedAt: string;
+  studentProfile?: {
+    id: string;
+    rollNumber: string;
+    firstName: string;
+    lastName: string;
+    department: string;
+    studentType?: StudentType;
+  };
+  assignedBy?: {
+    id: string;
+    email: string;
+    role?: UserRole;
+  };
+}
+
+

@@ -113,6 +113,11 @@ enum NotificationType {
   MESS
 }
 
+enum FineStatus {
+  UNPAID
+  PAID
+}
+
 // ----------------------------------------------------
 // MODELS
 // ----------------------------------------------------
@@ -134,6 +139,7 @@ model User {
   reviewedGuests      GuestRequest[]       @relation("ReviewedByAdmin")
   publishedNotices    Notice[]             @relation("PublishedByAdmin")
   updatedMessMenus    MessMenu[]           @relation("UpdatedByMessIncharge")
+  finesAssigned       Fine[]               @relation("FinesAssignedByAdmin")
   notifications       Notification[]
   auditLogs           AuditLog[]
 
@@ -165,6 +171,7 @@ model StudentProfile {
   guestRequests  GuestRequest[]
   messFeedbacks  MessFeedback[]
   presenceLogs   CampusPresenceLog[]
+  fines          Fine[]
 
   @@index([rollNumber])
   @@index([studentType])
@@ -482,4 +489,24 @@ model AuditLog {
   @@index([action])
   @@index([entityType])
   @@map("audit_logs")
+}
+
+model Fine {
+  id                String         @id @default(uuid()) @db.Uuid
+  studentProfileId  String         @db.Uuid
+  amount            Decimal        @db.Decimal(10, 2)
+  reason            String         @db.Text
+  status            FineStatus     @default(UNPAID)
+  assignedByAdminId String         @db.Uuid
+  assignedAt        DateTime       @default(now())
+  paidAt            DateTime?
+  updatedAt         DateTime       @updatedAt
+
+  studentProfile    StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  assignedBy        User           @relation("FinesAssignedByAdmin", fields: [assignedByAdminId], references: [id])
+
+  @@index([studentProfileId])
+  @@index([status])
+  @@index([assignedAt])
+  @@map("fines")
 }

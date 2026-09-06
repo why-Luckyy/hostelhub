@@ -11,6 +11,9 @@ import leaveRoutes from './leaveRoutes';
 import guestRoutes from './guestRoutes';
 import guestPassRoutes from './guestPassRoutes';
 import messRoutes from './messRoutes';
+import complaintRoutes from './complaintRoutes';
+import noticeRoutes from './noticeRoutes';
+import fineRoutes from './fineRoutes';
 
 const router = Router();
 
@@ -26,5 +29,8 @@ router.use('/leave-requests', leaveRoutes);
 router.use('/guest-requests', guestRoutes);
 router.use('/guest-passes', guestPassRoutes);
 router.use('/mess', messRoutes);
+router.use('/complaints', complaintRoutes);
+router.use('/notices', noticeRoutes);
+router.use('/fines', fineRoutes);
 
 export default router;

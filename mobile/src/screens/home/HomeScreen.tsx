@@ -27,6 +27,17 @@ import { MessDashboardScreen } from '../mess/MessDashboardScreen';
 import { MenuManagementScreen } from '../mess/MenuManagementScreen';
 import { FeedbackOverviewScreen } from '../mess/FeedbackOverviewScreen';
 
+import { ComplaintsScreen } from '../complaints/ComplaintsScreen';
+import { CreateComplaintScreen } from '../complaints/CreateComplaintScreen';
+import { NoticesScreen } from '../notices/NoticesScreen';
+import { FinesScreen } from '../fines/FinesScreen';
+import { ComplaintManagementScreen } from '../warden/ComplaintManagementScreen';
+import { NoticeManagementScreen } from '../warden/NoticeManagementScreen';
+import { CreateEditNoticeScreen } from '../warden/CreateEditNoticeScreen';
+import { FineManagementScreen } from '../warden/FineManagementScreen';
+import { AssignFineScreen } from '../warden/AssignFineScreen';
+import { Notice } from '../../types';
+
 type ActiveScreen =
   | 'HOME'
   | 'GATE_PASS'
@@ -40,7 +51,16 @@ type ActiveScreen =
   | 'MESS_FEEDBACK'
   | 'MESS_DASHBOARD'
   | 'MENU_MANAGEMENT'
-  | 'FEEDBACK_OVERVIEW';
+  | 'FEEDBACK_OVERVIEW'
+  | 'COMPLAINTS'
+  | 'CREATE_COMPLAINT'
+  | 'NOTICES'
+  | 'FINES'
+  | 'WARDEN_COMPLAINTS'
+  | 'WARDEN_NOTICES'
+  | 'WARDEN_CREATE_EDIT_NOTICE'
+  | 'WARDEN_FINES'
+  | 'WARDEN_ASSIGN_FINE';
 
 interface MyAllocationResponse {
   isAllocated: boolean;
@@ -88,6 +108,7 @@ interface HostelSummary {
 export const HomeScreen: React.FC = () => {
   const { user, profile, logout } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('HOME');
+  const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
   const [allocationData, setAllocationData] = useState<MyAllocationResponse | null>(null);
   const [hostels, setHostels] = useState<HostelSummary[]>([]);
   const [loadingPhase3, setLoadingPhase3] = useState<boolean>(false);
@@ -224,6 +245,80 @@ export const HomeScreen: React.FC = () => {
 
   if (currentScreen === 'FEEDBACK_OVERVIEW') {
     return <FeedbackOverviewScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'COMPLAINTS') {
+    return (
+      <ComplaintsScreen
+        onBack={() => setCurrentScreen('HOME')}
+        onNavigateCreate={() => setCurrentScreen('CREATE_COMPLAINT')}
+      />
+    );
+  }
+
+  if (currentScreen === 'CREATE_COMPLAINT') {
+    return (
+      <CreateComplaintScreen
+        onBack={() => setCurrentScreen('COMPLAINTS')}
+        onSuccess={() => setCurrentScreen('COMPLAINTS')}
+      />
+    );
+  }
+
+  if (currentScreen === 'NOTICES') {
+    return <NoticesScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'FINES') {
+    return <FinesScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'WARDEN_COMPLAINTS') {
+    return <ComplaintManagementScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'WARDEN_NOTICES') {
+    return (
+      <NoticeManagementScreen
+        onBack={() => setCurrentScreen('HOME')}
+        onNavigateCreate={() => {
+          setEditingNotice(null);
+          setCurrentScreen('WARDEN_CREATE_EDIT_NOTICE');
+        }}
+        onNavigateEdit={(notice) => {
+          setEditingNotice(notice);
+          setCurrentScreen('WARDEN_CREATE_EDIT_NOTICE');
+        }}
+      />
+    );
+  }
+
+  if (currentScreen === 'WARDEN_CREATE_EDIT_NOTICE') {
+    return (
+      <CreateEditNoticeScreen
+        initialNotice={editingNotice}
+        onBack={() => setCurrentScreen('WARDEN_NOTICES')}
+        onSuccess={() => setCurrentScreen('WARDEN_NOTICES')}
+      />
+    );
+  }
+
+  if (currentScreen === 'WARDEN_FINES') {
+    return (
+      <FineManagementScreen
+        onBack={() => setCurrentScreen('HOME')}
+        onNavigateAssign={() => setCurrentScreen('WARDEN_ASSIGN_FINE')}
+      />
+    );
+  }
+
+  if (currentScreen === 'WARDEN_ASSIGN_FINE') {
+    return (
+      <AssignFineScreen
+        onBack={() => setCurrentScreen('WARDEN_FINES')}
+        onSuccess={() => setCurrentScreen('WARDEN_FINES')}
+      />
+    );
   }
 
   return (
@@ -565,11 +660,107 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* Phase 5 Roadmap Banner */}
+        {/* Phase 6 Grievances, Notices & Discipline Hub for Students */}
+        {user?.role === 'STUDENT' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>⚖️ Grievances, Notices & Discipline</Text>
+            <Text style={styles.hubSubtitle}>
+              Raise maintenance issues, view official campus notices, and track disciplinary records.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('COMPLAINTS')}
+              >
+                <Text style={styles.actionCardIcon}>📋</Text>
+                <Text style={styles.actionCardTitle}>My Complaints</Text>
+                <Text style={styles.actionCardDesc}>Track pending & solved issues</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('CREATE_COMPLAINT')}
+              >
+                <Text style={styles.actionCardIcon}>✍️</Text>
+                <Text style={styles.actionCardTitle}>File Complaint</Text>
+                <Text style={styles.actionCardDesc}>Report room or mess issue</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('NOTICES')}
+              >
+                <Text style={styles.actionCardIcon}>📢</Text>
+                <Text style={styles.actionCardTitle}>Notice Board</Text>
+                <Text style={styles.actionCardDesc}>Announcements & alerts</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('FINES')}
+              >
+                <Text style={styles.actionCardIcon}>💳</Text>
+                <Text style={styles.actionCardTitle}>My Fines & Dues</Text>
+                <Text style={styles.actionCardDesc}>View disciplinary records</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 6 Grievances, Notices & Discipline Hub for Warden */}
+        {user?.role === 'WARDEN' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>⚖️ Grievance Redressal & Discipline Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Solve student complaints, publish campus notices, and manage disciplinary fines.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.primaryLight }]}
+                onPress={() => setCurrentScreen('WARDEN_COMPLAINTS')}
+              >
+                <Text style={styles.actionCardIcon}>📋</Text>
+                <Text style={styles.actionCardTitle}>Manage Complaints</Text>
+                <Text style={styles.actionCardDesc}>Review & mark complaints SOLVED</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('WARDEN_NOTICES')}
+              >
+                <Text style={styles.actionCardIcon}>📢</Text>
+                <Text style={styles.actionCardTitle}>Notice Board</Text>
+                <Text style={styles.actionCardDesc}>Publish & manage announcements</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.warning }]}
+                onPress={() => setCurrentScreen('WARDEN_FINES')}
+              >
+                <Text style={styles.actionCardIcon}>💳</Text>
+                <Text style={styles.actionCardTitle}>Fine Records</Text>
+                <Text style={styles.actionCardDesc}>Review & record fine payments</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.danger }]}
+                onPress={() => setCurrentScreen('WARDEN_ASSIGN_FINE')}
+              >
+                <Text style={styles.actionCardIcon}>⚠️</Text>
+                <Text style={styles.actionCardTitle}>Issue Fine</Text>
+                <Text style={styles.actionCardDesc}>Assign disciplinary fine</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 6 Roadmap Banner */}
         <View style={styles.roadmapCard}>
-          <Text style={styles.roadmapTitle}>🍽️ Phase 5 — Mess Management & Meal Analytics Live</Text>
+          <Text style={styles.roadmapTitle}>⚖️ Phase 6 — Complaints, Notices & Fines Live</Text>
           <Text style={styles.roadmapText}>
-            Weekly recurring dining schedules, multi-criteria meal feedback, and dynamic expected meal preparation forecasts based on residential allocations, approved leaves, and guest meals.
+            Strict single-direction complaint lifecycle (PENDING → SOLVED), official multi-audience notice board with priority pinning, and disciplinary fine tracking with in-app notifications and audit logging.
           </Text>
           <Text style={styles.roadmapSubtext}>
             HostelHub v1.0 • Comprehensive Campus Living Platform
