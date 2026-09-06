@@ -38,6 +38,9 @@ import { FineManagementScreen } from '../warden/FineManagementScreen';
 import { AssignFineScreen } from '../warden/AssignFineScreen';
 import { CampusPresenceScreen } from '../presence/CampusPresenceScreen';
 import { CampusPresenceDashboardScreen } from '../presence/CampusPresenceDashboardScreen';
+import { MessStaffManagementScreen } from '../mess/MessStaffManagementScreen';
+import { StaffDailyAttendanceScreen } from '../mess/StaffDailyAttendanceScreen';
+import { StaffAttendanceHistoryScreen } from '../mess/StaffAttendanceHistoryScreen';
 import { Notice } from '../../types';
 
 type ActiveScreen =
@@ -64,7 +67,10 @@ type ActiveScreen =
   | 'WARDEN_FINES'
   | 'WARDEN_ASSIGN_FINE'
   | 'CAMPUS_PRESENCE'
-  | 'WARDEN_CAMPUS_PRESENCE';
+  | 'WARDEN_CAMPUS_PRESENCE'
+  | 'MESS_STAFF_MANAGEMENT'
+  | 'STAFF_DAILY_ATTENDANCE'
+  | 'STAFF_ATTENDANCE_HISTORY';
 
 interface MyAllocationResponse {
   isAllocated: boolean;
@@ -333,6 +339,28 @@ export const HomeScreen: React.FC = () => {
     return <CampusPresenceDashboardScreen onBack={() => setCurrentScreen('HOME')} />;
   }
 
+  if (currentScreen === 'MESS_STAFF_MANAGEMENT') {
+    return (
+      <MessStaffManagementScreen
+        onBack={() => setCurrentScreen('HOME')}
+        readOnly={user?.role !== 'MESS_INCHARGE'}
+      />
+    );
+  }
+
+  if (currentScreen === 'STAFF_DAILY_ATTENDANCE') {
+    return (
+      <StaffDailyAttendanceScreen
+        onBack={() => setCurrentScreen('HOME')}
+        readOnly={user?.role !== 'MESS_INCHARGE'}
+      />
+    );
+  }
+
+  if (currentScreen === 'STAFF_ATTENDANCE_HISTORY') {
+    return <StaffAttendanceHistoryScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -594,6 +622,45 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : null}
 
+        {/* Phase 8 Mess Staff Attendance Hub for Mess Incharge */}
+        {user?.role === 'MESS_INCHARGE' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>⏱️ Mess Staff & Daily Attendance Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Manage kitchen personnel rosters, record daily check-in/out, and track on-time shift punctuality.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.primary }]}
+                onPress={() => setCurrentScreen('STAFF_DAILY_ATTENDANCE')}
+              >
+                <Text style={styles.actionCardIcon}>⏱️</Text>
+                <Text style={styles.actionCardTitle}>Today's Attendance</Text>
+                <Text style={styles.actionCardDesc}>Check-in & punctuality status</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('MESS_STAFF_MANAGEMENT')}
+              >
+                <Text style={styles.actionCardIcon}>👥</Text>
+                <Text style={styles.actionCardTitle}>Staff Roster</Text>
+                <Text style={styles.actionCardDesc}>Manage workers & shift timings</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.success }]}
+                onPress={() => setCurrentScreen('STAFF_ATTENDANCE_HISTORY')}
+              >
+                <Text style={styles.actionCardIcon}>📅</Text>
+                <Text style={styles.actionCardTitle}>Attendance History</Text>
+                <Text style={styles.actionCardDesc}>Historical logs & summaries</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
         {/* Phase 4 Gate Pass & Visitor Hub for Students */}
         {user?.role === 'STUDENT' ? (
           <View style={[styles.card, shadows.card]}>
@@ -810,11 +877,41 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* Phase 7 Roadmap Banner */}
+        {/* Phase 8 Mess Staff Oversight for Warden */}
+        {user?.role === 'WARDEN' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>👨‍🍳 Mess Staff Oversight</Text>
+            <Text style={styles.hubSubtitle}>
+              Monitor dining hall staff attendance, arrival punctuality, and staff roster status.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.warning }]}
+                onPress={() => setCurrentScreen('STAFF_DAILY_ATTENDANCE')}
+              >
+                <Text style={styles.actionCardIcon}>⏱️</Text>
+                <Text style={styles.actionCardTitle}>Staff Attendance</Text>
+                <Text style={styles.actionCardDesc}>View daily punctuality & roster</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('STAFF_ATTENDANCE_HISTORY')}
+              >
+                <Text style={styles.actionCardIcon}>📅</Text>
+                <Text style={styles.actionCardTitle}>Attendance Logs</Text>
+                <Text style={styles.actionCardDesc}>Historical attendance trends</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 8 Roadmap Banner */}
         <View style={styles.roadmapCard}>
-          <Text style={styles.roadmapTitle}>📍 Phase 7 — Campus Presence & Geofencing Live</Text>
+          <Text style={styles.roadmapTitle}>⏱️ Phase 8 — Mess Staff Attendance Live</Text>
           <Text style={styles.roadmapText}>
-            Server-authoritative GPS verification, circular campus geofencing, student presence verification history, and real-time residential campus safety analytics.
+            Operational mess staff roster management, server-authoritative check-in/out, automated shift punctuality tracking, daily supervisor dashboard, and historical audit reporting.
           </Text>
           <Text style={styles.roadmapSubtext}>
             HostelHub v1.0 • Comprehensive Campus Living Platform

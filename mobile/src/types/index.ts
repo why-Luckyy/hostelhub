@@ -366,5 +366,68 @@ export interface PresenceSummary {
   };
 }
 
+// ----------------------------------------------------
+// PHASE 8 TYPES: MESS STAFF ATTENDANCE
+// ----------------------------------------------------
+
+export type MessStaffRole =
+  | 'COOK'
+  | 'SERVER'
+  | 'CLEANING_STAFF'
+  | 'FOOD_TRANSFER'
+  | 'OTHER';
+
+export type StaffAttendanceStatus =
+  | 'PRESENT'
+  | 'ABSENT'
+  | 'LATE'
+  | 'HALF_DAY';
+
+export interface MessStaff {
+  id: string;
+  name: string;
+  role: MessStaffRole;
+  phone?: string | null;
+  expectedStartTime: string;
+  isActive: boolean;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StaffAttendance {
+  id: string;
+  staffId: string;
+  date: string;
+  status: StaffAttendanceStatus;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  expectedStartTime?: string | null;
+  isLate: boolean;
+  lateMinutes: number;
+  remarks?: string | null;
+  markedByUserId?: string;
+  staff?: MessStaff;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyStaffAttendanceItem {
+  staff: MessStaff;
+  attendance: StaffAttendance | null;
+  isPending: boolean;
+}
+
+export interface DailyStaffAttendanceSummary {
+  date: string;
+  totalActiveStaff: number;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+  halfDayCount: number;
+  pendingCount: number;
+  records: DailyStaffAttendanceItem[];
+}
+
 
 

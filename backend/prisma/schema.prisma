@@ -118,6 +118,21 @@ enum FineStatus {
   PAID
 }
 
+enum MessStaffRole {
+  COOK
+  SERVER
+  CLEANING_STAFF
+  FOOD_TRANSFER
+  OTHER
+}
+
+enum StaffAttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+}
+
 // ----------------------------------------------------
 // MODELS
 // ----------------------------------------------------
@@ -140,6 +155,8 @@ model User {
   publishedNotices    Notice[]             @relation("PublishedByAdmin")
   updatedMessMenus    MessMenu[]           @relation("UpdatedByMessIncharge")
   finesAssigned       Fine[]               @relation("FinesAssignedByAdmin")
+  createdMessStaff    MessStaff[]          @relation("CreatedByMessIncharge")
+  markedStaffAttendance StaffAttendance[]   @relation("AttendanceMarkedByUser")
   notifications       Notification[]
   auditLogs           AuditLog[]
 
@@ -509,4 +526,48 @@ model Fine {
   @@index([status])
   @@index([assignedAt])
   @@map("fines")
+}
+
+model MessStaff {
+  id                String            @id @default(uuid()) @db.Uuid
+  name              String            @db.VarChar(100)
+  role              MessStaffRole
+  phone             String?           @db.VarChar(20)
+  expectedStartTime String            @default("06:30") @db.VarChar(5)
+  isActive          Boolean           @default(true)
+  createdByUserId   String            @db.Uuid
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  createdByUser     User              @relation("CreatedByMessIncharge", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  attendanceRecords StaffAttendance[]
+
+  @@index([role])
+  @@index([isActive])
+  @@map("mess_staff")
+}
+
+model StaffAttendance {
+  id                String                @id @default(uuid()) @db.Uuid
+  staffId           String                @db.Uuid
+  date              DateTime              @db.Date
+  status            StaffAttendanceStatus @default(PRESENT)
+  checkInTime       DateTime?
+  checkOutTime      DateTime?
+  expectedStartTime String?               @db.VarChar(5)
+  isLate            Boolean               @default(false)
+  lateMinutes       Int                   @default(0)
+  remarks           String?               @db.Text
+  markedByUserId    String                @db.Uuid
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  staff             MessStaff             @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  markedByUser      User                  @relation("AttendanceMarkedByUser", fields: [markedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([staffId, date])
+  @@index([staffId])
+  @@index([date])
+  @@index([status])
+  @@map("staff_attendance")
 }
