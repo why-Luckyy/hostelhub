@@ -7,6 +7,9 @@ import floorRoutes from './floorRoutes';
 import roomRoutes from './roomRoutes';
 import bedRoutes from './bedRoutes';
 import allocationRoutes from './allocationRoutes';
+import leaveRoutes from './leaveRoutes';
+import guestRoutes from './guestRoutes';
+import guestPassRoutes from './guestPassRoutes';
 
 const router = Router();
 
@@ -18,5 +21,8 @@ router.use('/floors', floorRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/beds', bedRoutes);
 router.use('/allocations', allocationRoutes);
+router.use('/leave-requests', leaveRoutes);
+router.use('/guest-requests', guestRoutes);
+router.use('/guest-passes', guestPassRoutes);
 
 export default router;

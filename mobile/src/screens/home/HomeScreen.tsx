@@ -13,6 +13,22 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../consta
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../api/client';
 
+import { GatePassScreen } from '../gatepass/GatePassScreen';
+import { CreateGatePassScreen } from '../gatepass/CreateGatePassScreen';
+import { GuestRequestScreen } from '../guest/GuestRequestScreen';
+import { GuestPassScreen } from '../guest/GuestPassScreen';
+import { GatePassReviewScreen } from '../warden/GatePassReviewScreen';
+import { GuestReviewScreen } from '../warden/GuestReviewScreen';
+
+type ActiveScreen =
+  | 'HOME'
+  | 'GATE_PASS'
+  | 'CREATE_GATE_PASS'
+  | 'GUEST_REQUEST'
+  | 'GUEST_PASS'
+  | 'WARDEN_GATE_PASS_REVIEW'
+  | 'WARDEN_GUEST_REVIEW';
+
 interface MyAllocationResponse {
   isAllocated: boolean;
   message: string;
@@ -58,6 +74,7 @@ interface HostelSummary {
 
 export const HomeScreen: React.FC = () => {
   const { user, profile, logout } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('HOME');
   const [allocationData, setAllocationData] = useState<MyAllocationResponse | null>(null);
   const [hostels, setHostels] = useState<HostelSummary[]>([]);
   const [loadingPhase3, setLoadingPhase3] = useState<boolean>(false);
@@ -121,6 +138,40 @@ export const HomeScreen: React.FC = () => {
         return colors.textSecondary;
     }
   };
+
+  if (currentScreen === 'GATE_PASS') {
+    return (
+      <GatePassScreen
+        onNavigateApply={() => setCurrentScreen('CREATE_GATE_PASS')}
+        onBack={() => setCurrentScreen('HOME')}
+      />
+    );
+  }
+
+  if (currentScreen === 'CREATE_GATE_PASS') {
+    return (
+      <CreateGatePassScreen
+        onSuccess={() => setCurrentScreen('GATE_PASS')}
+        onBack={() => setCurrentScreen('GATE_PASS')}
+      />
+    );
+  }
+
+  if (currentScreen === 'GUEST_REQUEST') {
+    return <GuestRequestScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'GUEST_PASS') {
+    return <GuestPassScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'WARDEN_GATE_PASS_REVIEW') {
+    return <GatePassReviewScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'WARDEN_GUEST_REVIEW') {
+    return <GuestReviewScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -305,11 +356,89 @@ export const HomeScreen: React.FC = () => {
           ) : null}
         </View>
 
-        {/* Phase 3 Roadmap Banner */}
+        {/* Phase 4 Gate Pass & Visitor Hub for Students */}
+        {user?.role === 'STUDENT' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>🎫 Gate Pass & Visitor Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Request overnight leaves and manage visitor entry passes.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('GATE_PASS')}
+              >
+                <Text style={styles.actionCardIcon}>🎫</Text>
+                <Text style={styles.actionCardTitle}>My Gate Passes</Text>
+                <Text style={styles.actionCardDesc}>View & track leaves</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('CREATE_GATE_PASS')}
+              >
+                <Text style={styles.actionCardIcon}>📝</Text>
+                <Text style={styles.actionCardTitle}>Apply Gate Pass</Text>
+                <Text style={styles.actionCardDesc}>New leave request</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('GUEST_REQUEST')}
+              >
+                <Text style={styles.actionCardIcon}>👥</Text>
+                <Text style={styles.actionCardTitle}>Guest Requests</Text>
+                <Text style={styles.actionCardDesc}>Request visitor entry</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('GUEST_PASS')}
+              >
+                <Text style={styles.actionCardIcon}>🎟️</Text>
+                <Text style={styles.actionCardTitle}>Guest Passes</Text>
+                <Text style={styles.actionCardDesc}>Active entry passes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 4 Gate Pass & Guest Review Hub for Warden */}
+        {user?.role === 'WARDEN' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>📋 Gate Pass & Visitor Review Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Review pending student overnight leaves and issue official guest visitor passes.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.primaryLight }]}
+                onPress={() => setCurrentScreen('WARDEN_GATE_PASS_REVIEW')}
+              >
+                <Text style={styles.actionCardIcon}>🎫</Text>
+                <Text style={styles.actionCardTitle}>Review Gate Passes</Text>
+                <Text style={styles.actionCardDesc}>Approve / Reject student leaves</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('WARDEN_GUEST_REVIEW')}
+              >
+                <Text style={styles.actionCardIcon}>🎟️</Text>
+                <Text style={styles.actionCardTitle}>Review Guest Requests</Text>
+                <Text style={styles.actionCardDesc}>Issue digital visitor passes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 4 Roadmap Banner */}
         <View style={styles.roadmapCard}>
-          <Text style={styles.roadmapTitle}>🏛️ Phase 3 — Hostel & Bed Engine Live</Text>
+          <Text style={styles.roadmapTitle}>🎫 Phase 4 — Gate Pass & Visitor Engine Live</Text>
           <Text style={styles.roadmapText}>
-            Hostel, Floor, Room, and Bed hierarchy with atomic concurrency protection, Day Scholar restriction, and historical allocation retention.
+            Student gate-pass applications, Warden review workflows, Day Scholar residential verification, and cryptographically secure guest-pass generation.
           </Text>
           <Text style={styles.roadmapSubtext}>
             HostelHub v1.0 • Residential Campus Engine
@@ -568,6 +697,45 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   roadmapSubtext: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  hubTitle: {
+    ...typography.bodyLarge,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  hubSubtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  actionCard: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionCardIcon: {
+    fontSize: 22,
+    marginBottom: spacing.xs,
+  },
+  actionCardTitle: {
+    ...typography.bodyMedium,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  actionCardDesc: {
     ...typography.caption,
     color: colors.textMuted,
   },
