@@ -221,6 +221,7 @@ describe('Authentication, Database & RBAC End-to-End Suite', () => {
     it('should reject disabled/inactive users with 403 Forbidden', async () => {
       // Create temporary disabled user
       const disabledPasswordHash = await bcrypt.hash('Disabled@123', 10);
+      await prisma.user.deleteMany({ where: { email: 'inactive.user.test@hostelhub.edu' } });
       const disabledUser = await prisma.user.create({
         data: {
           email: 'inactive.user.test@hostelhub.edu',

@@ -10,6 +10,7 @@ import allocationRoutes from './allocationRoutes';
 import leaveRoutes from './leaveRoutes';
 import guestRoutes from './guestRoutes';
 import guestPassRoutes from './guestPassRoutes';
+import messRoutes from './messRoutes';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/allocations', allocationRoutes);
 router.use('/leave-requests', leaveRoutes);
 router.use('/guest-requests', guestRoutes);
 router.use('/guest-passes', guestPassRoutes);
+router.use('/mess', messRoutes);
 
 export default router;

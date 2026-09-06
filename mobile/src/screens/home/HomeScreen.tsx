@@ -20,6 +20,13 @@ import { GuestPassScreen } from '../guest/GuestPassScreen';
 import { GatePassReviewScreen } from '../warden/GatePassReviewScreen';
 import { GuestReviewScreen } from '../warden/GuestReviewScreen';
 
+import { TodayMenuScreen } from '../mess/TodayMenuScreen';
+import { WeeklyMenuScreen } from '../mess/WeeklyMenuScreen';
+import { FeedbackScreen } from '../mess/FeedbackScreen';
+import { MessDashboardScreen } from '../mess/MessDashboardScreen';
+import { MenuManagementScreen } from '../mess/MenuManagementScreen';
+import { FeedbackOverviewScreen } from '../mess/FeedbackOverviewScreen';
+
 type ActiveScreen =
   | 'HOME'
   | 'GATE_PASS'
@@ -27,7 +34,13 @@ type ActiveScreen =
   | 'GUEST_REQUEST'
   | 'GUEST_PASS'
   | 'WARDEN_GATE_PASS_REVIEW'
-  | 'WARDEN_GUEST_REVIEW';
+  | 'WARDEN_GUEST_REVIEW'
+  | 'TODAY_MENU'
+  | 'WEEKLY_MENU'
+  | 'MESS_FEEDBACK'
+  | 'MESS_DASHBOARD'
+  | 'MENU_MANAGEMENT'
+  | 'FEEDBACK_OVERVIEW';
 
 interface MyAllocationResponse {
   isAllocated: boolean;
@@ -171,6 +184,46 @@ export const HomeScreen: React.FC = () => {
 
   if (currentScreen === 'WARDEN_GUEST_REVIEW') {
     return <GuestReviewScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'TODAY_MENU') {
+    return (
+      <TodayMenuScreen
+        onBack={() => setCurrentScreen('HOME')}
+        onNavigateWeekly={() => setCurrentScreen('WEEKLY_MENU')}
+      />
+    );
+  }
+
+  if (currentScreen === 'WEEKLY_MENU') {
+    return (
+      <WeeklyMenuScreen
+        onBack={() => setCurrentScreen('HOME')}
+        onNavigateToday={() => setCurrentScreen('TODAY_MENU')}
+      />
+    );
+  }
+
+  if (currentScreen === 'MESS_FEEDBACK') {
+    return <FeedbackScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'MESS_DASHBOARD') {
+    return (
+      <MessDashboardScreen
+        onBack={() => setCurrentScreen('HOME')}
+        onNavigateMenu={() => setCurrentScreen('MENU_MANAGEMENT')}
+        onNavigateFeedback={() => setCurrentScreen('FEEDBACK_OVERVIEW')}
+      />
+    );
+  }
+
+  if (currentScreen === 'MENU_MANAGEMENT') {
+    return <MenuManagementScreen onBack={() => setCurrentScreen('HOME')} />;
+  }
+
+  if (currentScreen === 'FEEDBACK_OVERVIEW') {
+    return <FeedbackOverviewScreen onBack={() => setCurrentScreen('HOME')} />;
   }
 
   return (
@@ -345,16 +398,94 @@ export const HomeScreen: React.FC = () => {
             </View>
           ) : null}
 
-          {/* MESS INCHARGE */}
+          {/* MESS INCHARGE Quick Overview */}
           {user?.role === 'MESS_INCHARGE' ? (
             <View style={[styles.hostelStatusBox, { borderLeftColor: colors.warning }]}>
               <Text style={styles.hostelStatusTitle}>🍽️ Mess Operations Active</Text>
               <Text style={styles.hostelStatusDesc}>
-                Manage dining menus, review student meal feedback, and view automated meal forecasts.
+                Manage recurring dining menus, track student meal feedback, and monitor live meal preparation forecasts.
               </Text>
             </View>
           ) : null}
         </View>
+
+        {/* Phase 5 Mess & Dining Hub for Students */}
+        {user?.role === 'STUDENT' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>🍽️ Mess & Dining Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Check daily meal schedule, explore the weekly menu, and share dining feedback.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('TODAY_MENU')}
+              >
+                <Text style={styles.actionCardIcon}>🍲</Text>
+                <Text style={styles.actionCardTitle}>Today's Menu</Text>
+                <Text style={styles.actionCardDesc}>Live 4-meal daily schedule</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('WEEKLY_MENU')}
+              >
+                <Text style={styles.actionCardIcon}>📅</Text>
+                <Text style={styles.actionCardTitle}>Weekly Schedule</Text>
+                <Text style={styles.actionCardDesc}>Full Mon-Sun timetable</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => setCurrentScreen('MESS_FEEDBACK')}
+              >
+                <Text style={styles.actionCardIcon}>⭐</Text>
+                <Text style={styles.actionCardTitle}>Dining Feedback</Text>
+                <Text style={styles.actionCardDesc}>Rate meals & food quality</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Phase 5 Operations Hub for Mess Incharge */}
+        {user?.role === 'MESS_INCHARGE' ? (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.hubTitle}>👨‍🍳 Mess Management Hub</Text>
+            <Text style={styles.hubSubtitle}>
+              Live meal forecasts, weekly recurring menu planning, and student dining quality reviews.
+            </Text>
+
+            <View style={styles.actionGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.warning }]}
+                onPress={() => setCurrentScreen('MESS_DASHBOARD')}
+              >
+                <Text style={styles.actionCardIcon}>📊</Text>
+                <Text style={styles.actionCardTitle}>Meal Forecast</Text>
+                <Text style={styles.actionCardDesc}>Live expected counts & leaves</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.accent }]}
+                onPress={() => setCurrentScreen('MENU_MANAGEMENT')}
+              >
+                <Text style={styles.actionCardIcon}>📋</Text>
+                <Text style={styles.actionCardTitle}>Manage Menus</Text>
+                <Text style={styles.actionCardDesc}>Recurring weekly schedule</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { borderColor: colors.primaryLight }]}
+                onPress={() => setCurrentScreen('FEEDBACK_OVERVIEW')}
+              >
+                <Text style={styles.actionCardIcon}>⭐</Text>
+                <Text style={styles.actionCardTitle}>Student Feedback</Text>
+                <Text style={styles.actionCardDesc}>Rating metrics & suggestions</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
         {/* Phase 4 Gate Pass & Visitor Hub for Students */}
         {user?.role === 'STUDENT' ? (
@@ -434,14 +565,14 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* Phase 4 Roadmap Banner */}
+        {/* Phase 5 Roadmap Banner */}
         <View style={styles.roadmapCard}>
-          <Text style={styles.roadmapTitle}>🎫 Phase 4 — Gate Pass & Visitor Engine Live</Text>
+          <Text style={styles.roadmapTitle}>🍽️ Phase 5 — Mess Management & Meal Analytics Live</Text>
           <Text style={styles.roadmapText}>
-            Student gate-pass applications, Warden review workflows, Day Scholar residential verification, and cryptographically secure guest-pass generation.
+            Weekly recurring dining schedules, multi-criteria meal feedback, and dynamic expected meal preparation forecasts based on residential allocations, approved leaves, and guest meals.
           </Text>
           <Text style={styles.roadmapSubtext}>
-            HostelHub v1.0 • Residential Campus Engine
+            HostelHub v1.0 • Comprehensive Campus Living Platform
           </Text>
         </View>
       </ScrollView>

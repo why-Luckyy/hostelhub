@@ -115,3 +115,79 @@ export interface GuestRequest {
   guestPass?: GuestPass | null;
 }
 
+export type DayOfWeek =
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY';
+
+export interface MessMenu {
+  id: string;
+  dayOfWeek: DayOfWeek;
+  mealType: MealType;
+  items: string;
+  specialNotes?: string | null;
+  updatedByUserId?: string;
+  updatedAt: string;
+  updatedBy?: {
+    id: string;
+    email: string;
+    role: UserRole;
+  };
+}
+
+export interface MessFeedback {
+  id: string;
+  studentProfileId: string;
+  mealDate: string;
+  mealType: MealType;
+  rating: number;
+  foodQualityRating: number;
+  cleanlinessRating: number;
+  comment?: string | null;
+  createdAt: string;
+  studentProfile?: {
+    id: string;
+    rollNumber: string;
+    firstName: string;
+    lastName: string;
+    studentType: StudentType;
+  };
+}
+
+export interface ExpectedMealBreakdown {
+  mealType: MealType;
+  expectedMeals: number;
+  residentEligible: number;
+  onLeave: number;
+  netResidents: number;
+  guestMeals: number;
+}
+
+export interface MealAnalytics {
+  date: string;
+  dayOfWeek: DayOfWeek;
+  totalEligibleResidents: number;
+  breakdown: Record<string, ExpectedMealBreakdown>;
+}
+
+export interface MessDashboardData {
+  today: MealAnalytics;
+  satisfaction: {
+    totalFeedbacks: number;
+    averageRating: number;
+    averageFoodQuality: number;
+    averageCleanliness: number;
+  };
+  weeklyTrend: Array<{
+    date: string;
+    dayOfWeek: DayOfWeek;
+    breakfast: number;
+    lunch: number;
+    dinner: number;
+  }>;
+}
+
