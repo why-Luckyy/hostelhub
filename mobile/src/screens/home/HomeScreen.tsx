@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,12 +7,87 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius, shadows } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../api/client';
+
+interface MyAllocationResponse {
+  isAllocated: boolean;
+  message: string;
+  allocation?: {
+    id: string;
+    bedId: string;
+    bedLabel: string;
+    allocatedFrom: string;
+    room: {
+      id: string;
+      roomNumber: string;
+      roomType: string;
+      floor: {
+        id: string;
+        floorNumber: number;
+        floorName: string;
+        hostel: {
+          id: string;
+          name: string;
+          code: string;
+        };
+      };
+    };
+  } | null;
+}
+
+interface HostelSummary {
+  id: string;
+  name: string;
+  code: string;
+  genderAllowed: string;
+  totalFloors: number;
+  isActive: boolean;
+  stats: {
+    totalFloorsRecorded: number;
+    totalRooms: number;
+    totalCapacity: number;
+    totalOccupancy: number;
+    totalVacant: number;
+    occupancyRate: number;
+  };
+}
 
 export const HomeScreen: React.FC = () => {
   const { user, profile, logout } = useAuth();
+  const [allocationData, setAllocationData] = useState<MyAllocationResponse | null>(null);
+  const [hostels, setHostels] = useState<HostelSummary[]>([]);
+  const [loadingPhase3, setLoadingPhase3] = useState<boolean>(false);
+
+  useEffect(() => {
+    loadPhase3Data();
+  }, [user?.role]);
+
+  const loadPhase3Data = async () => {
+    if (!user) return;
+    setLoadingPhase3(true);
+    try {
+      if (user.role === 'STUDENT') {
+        const response = await apiClient.get('/allocations/my-allocation');
+        if (response.data?.data) {
+          setAllocationData(response.data.data);
+        }
+      } else if (user.role === 'WARDEN') {
+        const response = await apiClient.get('/hostels');
+        if (response.data?.data) {
+          setHostels(response.data.data);
+        }
+      }
+    } catch (error) {
+      // Handled gracefully in UI state
+      console.log('Phase 3 data load notice:', error);
+    } finally {
+      setLoadingPhase3(false);
+    }
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out of HostelHub?', [
@@ -85,7 +160,7 @@ export const HomeScreen: React.FC = () => {
 
           <View style={styles.divider} />
 
-          {/* Student-specific Residential Information */}
+          {/* Student Profile Details */}
           {user?.role === 'STUDENT' && profile ? (
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
@@ -122,61 +197,122 @@ export const HomeScreen: React.FC = () => {
             </View>
           ) : null}
 
-          {/* Residential Status Badge for Students */}
+          {/* STUDENT: Phase 3 Allocation Status View */}
           {user?.role === 'STUDENT' ? (
             profile?.studentType === 'HOSTELER' ? (
               <View style={styles.hostelStatusBox}>
-                <Text style={styles.hostelStatusTitle}>🛏️ Hostel Room Allocation</Text>
-                {profile.bedAllocation ? (
-                  <Text style={styles.hostelStatusDesc}>
-                    {profile.bedAllocation.room.floor.hostel.name} • Room{' '}
-                    {profile.bedAllocation.room.roomNumber} ({profile.bedAllocation.bedLabel})
-                  </Text>
+                <Text style={styles.hostelStatusTitle}>🛏️ Hostel & Bed Allocation</Text>
+                {loadingPhase3 ? (
+                  <ActivityIndicator size="small" color={colors.primaryLight} style={{ marginVertical: 8 }} />
+                ) : allocationData?.isAllocated && allocationData.allocation ? (
+                  <View style={styles.allocationDetailsBox}>
+                    <Text style={styles.allocationPrimary}>
+                      {allocationData.allocation.room.floor.hostel.name} ({allocationData.allocation.room.floor.hostel.code})
+                    </Text>
+                    <Text style={styles.allocationSub}>
+                      Floor: {allocationData.allocation.room.floor.floorName} (Floor {allocationData.allocation.room.floor.floorNumber})
+                    </Text>
+                    <Text style={styles.allocationSub}>
+                      Room: {allocationData.allocation.room.roomNumber} • {allocationData.allocation.room.roomType}
+                    </Text>
+                    <View style={styles.bedBadge}>
+                      <Text style={styles.bedBadgeText}>
+                        Assigned: {allocationData.allocation.bedLabel}
+                      </Text>
+                    </View>
+                  </View>
                 ) : (
-                  <Text style={styles.hostelStatusDesc}>
-                    Allocated to Kaveri Hostel Block A (Room 101, Bed A)
-                  </Text>
+                  <View style={styles.unallocatedBox}>
+                    <Text style={styles.unallocatedTitle}>No hostel bed currently assigned.</Text>
+                    <Text style={styles.hostelStatusDesc}>
+                      You are eligible for residential allocation. Please contact your Warden office for room assignment.
+                    </Text>
+                  </View>
                 )}
               </View>
             ) : (
               <View style={[styles.hostelStatusBox, { borderLeftColor: colors.success }]}>
-                <Text style={styles.hostelStatusTitle}>🚌 Commuter Status</Text>
+                <Text style={styles.hostelStatusTitle}>🚌 Commuter Student Status</Text>
                 <Text style={styles.hostelStatusDesc}>
-                  You are registered as a Day Scholar. Hostel room allocation is not applicable.
+                  You are registered as a Day Scholar. Hostel bed allocation is not permitted for day scholars.
                 </Text>
               </View>
             )
           ) : null}
 
-          {/* Staff Info for Warden & Mess */}
+          {/* WARDEN: Phase 3 Infrastructure & Occupancy Overview */}
           {user?.role === 'WARDEN' ? (
-            <View style={styles.hostelStatusBox}>
-              <Text style={styles.hostelStatusTitle}>🛡️ Administrator Privileges Active</Text>
-              <Text style={styles.hostelStatusDesc}>
-                Full authority over Hostel & Room allocations, Leave approvals, Guest passes, and operational analytics.
-              </Text>
+            <View style={styles.wardenSection}>
+              <View style={styles.hostelStatusBox}>
+                <Text style={styles.hostelStatusTitle}>🏢 Hostel Infrastructure Overview</Text>
+                <Text style={styles.hostelStatusDesc}>
+                  Warden Management: Hostels, Floors, Rooms, and Physical Beds.
+                </Text>
+              </View>
+
+              {loadingPhase3 ? (
+                <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 12 }} />
+              ) : hostels.length > 0 ? (
+                hostels.map((h) => (
+                  <View key={h.id} style={styles.hostelCard}>
+                    <View style={styles.hostelHeaderRow}>
+                      <Text style={styles.hostelNameText}>{h.name}</Text>
+                      <Text style={styles.hostelCodeBadge}>{h.code}</Text>
+                    </View>
+
+                    <Text style={styles.hostelMetaText}>
+                      Gender: {h.genderAllowed} • Total Floors: {h.totalFloors}
+                    </Text>
+
+                    <View style={styles.statsRow}>
+                      <View style={styles.statPill}>
+                        <Text style={styles.statPillLabel}>Capacity</Text>
+                        <Text style={styles.statPillValue}>{h.stats.totalCapacity}</Text>
+                      </View>
+                      <View style={styles.statPill}>
+                        <Text style={styles.statPillLabel}>Occupied</Text>
+                        <Text style={[styles.statPillValue, { color: colors.warning }]}>
+                          {h.stats.totalOccupancy}
+                        </Text>
+                      </View>
+                      <View style={styles.statPill}>
+                        <Text style={styles.statPillLabel}>Vacant Beds</Text>
+                        <Text style={[styles.statPillValue, { color: colors.success }]}>
+                          {h.stats.totalVacant}
+                        </Text>
+                      </View>
+                      <View style={styles.statPill}>
+                        <Text style={styles.statPillLabel}>Occupancy</Text>
+                        <Text style={styles.statPillValue}>{h.stats.occupancyRate}%</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No hostel buildings configured yet.</Text>
+              )}
             </View>
           ) : null}
 
+          {/* MESS INCHARGE */}
           {user?.role === 'MESS_INCHARGE' ? (
             <View style={[styles.hostelStatusBox, { borderLeftColor: colors.warning }]}>
               <Text style={styles.hostelStatusTitle}>🍽️ Mess Operations Active</Text>
               <Text style={styles.hostelStatusDesc}>
-                Manage dining menus, review student meal feedback, and view automated expected meal forecasts.
+                Manage dining menus, review student meal feedback, and view automated meal forecasts.
               </Text>
             </View>
           ) : null}
         </View>
 
-        {/* Next Phase Roadmap Preview */}
+        {/* Phase 3 Roadmap Banner */}
         <View style={styles.roadmapCard}>
-          <Text style={styles.roadmapTitle}>🚀 Phase 2 Architecture Verified</Text>
+          <Text style={styles.roadmapTitle}>🏛️ Phase 3 — Hostel & Bed Engine Live</Text>
           <Text style={styles.roadmapText}>
-            Authentication, password hashing, JWT session rotation, and Role-Based Access Control
-            are fully operational.
+            Hostel, Floor, Room, and Bed hierarchy with atomic concurrency protection, Day Scholar restriction, and historical allocation retention.
           </Text>
           <Text style={styles.roadmapSubtext}>
-            Next: <Text style={{ color: colors.text }}>Phase 3 — Hostel & Room Management</Text>
+            HostelHub v1.0 • Residential Campus Engine
           </Text>
         </View>
       </ScrollView>
@@ -297,17 +433,120 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderLeftWidth: 4,
     borderLeftColor: colors.primaryLight,
+    marginBottom: spacing.sm,
   },
   hostelStatusTitle: {
     ...typography.bodyMedium,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   hostelStatusDesc: {
     ...typography.bodySmall,
     color: colors.textSecondary,
     lineHeight: 18,
+  },
+  allocationDetailsBox: {
+    marginTop: spacing.xs,
+  },
+  allocationPrimary: {
+    ...typography.bodyMedium,
+    fontWeight: '700',
+    color: colors.primaryLight,
+    marginBottom: 2,
+  },
+  allocationSub: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  bedBadge: {
+    backgroundColor: colors.primaryDark,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.sm,
+    marginTop: spacing.xs,
+  },
+  bedBadgeText: {
+    ...typography.caption,
+    color: colors.primaryLight,
+    fontWeight: '700',
+  },
+  unallocatedBox: {
+    marginTop: 4,
+  },
+  unallocatedTitle: {
+    ...typography.bodyMedium,
+    fontWeight: '600',
+    color: colors.warning,
+    marginBottom: 2,
+  },
+  wardenSection: {
+    marginTop: spacing.xs,
+  },
+  hostelCard: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  hostelHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  hostelNameText: {
+    ...typography.bodyMedium,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  hostelCodeBadge: {
+    ...typography.caption,
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    color: colors.accent,
+    fontWeight: '700',
+  },
+  hostelMetaText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  statPill: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statPillLabel: {
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  statPillValue: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 1,
+  },
+  emptyText: {
+    ...typography.bodySmall,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginVertical: spacing.md,
   },
   roadmapCard: {
     backgroundColor: colors.surfaceLight,

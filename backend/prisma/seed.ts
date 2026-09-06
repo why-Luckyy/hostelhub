@@ -1,3 +1,5 @@
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
 import { PrismaClient, UserRole, StudentType, GenderAllowed, RoomType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -71,7 +73,44 @@ async function main() {
   });
   console.log('✅ Created Hostel block:', hostel.name);
 
-  const room101 = hostel.floors[0].rooms.find((r) => r.roomNumber === '101');
+  // Ensure rooms and beds exist
+  const room101 = await prisma.room.findFirst({
+    where: { floor: { hostelId: hostel.id }, roomNumber: '101' },
+  });
+  const room102 = await prisma.room.findFirst({
+    where: { floor: { hostelId: hostel.id }, roomNumber: '102' },
+  });
+
+  if (room101) {
+    await prisma.bed.upsert({
+      where: { roomId_bedLabel: { roomId: room101.id, bedLabel: 'Bed A' } },
+      update: {},
+      create: { roomId: room101.id, bedLabel: 'Bed A', isActive: true },
+    });
+    await prisma.bed.upsert({
+      where: { roomId_bedLabel: { roomId: room101.id, bedLabel: 'Bed B' } },
+      update: {},
+      create: { roomId: room101.id, bedLabel: 'Bed B', isActive: true },
+    });
+  }
+
+  if (room102) {
+    await prisma.bed.upsert({
+      where: { roomId_bedLabel: { roomId: room102.id, bedLabel: 'Bed A' } },
+      update: {},
+      create: { roomId: room102.id, bedLabel: 'Bed A', isActive: true },
+    });
+    await prisma.bed.upsert({
+      where: { roomId_bedLabel: { roomId: room102.id, bedLabel: 'Bed B' } },
+      update: {},
+      create: { roomId: room102.id, bedLabel: 'Bed B', isActive: true },
+    });
+    await prisma.bed.upsert({
+      where: { roomId_bedLabel: { roomId: room102.id, bedLabel: 'Bed C' } },
+      update: {},
+      create: { roomId: room102.id, bedLabel: 'Bed C', isActive: true },
+    });
+  }
 
   // 4. Create Hosteler Student
   const hostelerUser = await prisma.user.upsert({
@@ -95,20 +134,36 @@ async function main() {
           guardianPhone: '+919876543211',
           guardianEmail: 'rajesh.sharma@example.com',
           isAllocated: true,
-          ...(room101 && {
-            bedAllocation: {
-              create: {
-                roomId: room101.id,
-                bedLabel: 'Bed A',
-                allocatedByAdminId: warden.id,
-              },
-            },
-          }),
         },
       },
     },
+    include: { studentProfile: true },
   });
   console.log('✅ Created Hosteler Student account:', hostelerUser.email);
+
+  // Link allocation for Hosteler student if not already present
+  if (hostelerUser.studentProfile && room101) {
+    const bedA = await prisma.bed.findUnique({
+      where: { roomId_bedLabel: { roomId: room101.id, bedLabel: 'Bed A' } },
+    });
+    if (bedA) {
+      const existingAlloc = await prisma.bedAllocation.findFirst({
+        where: { studentProfileId: hostelerUser.studentProfile.id, isActive: true },
+      });
+      if (!existingAlloc) {
+        await prisma.bedAllocation.create({
+          data: {
+            studentProfileId: hostelerUser.studentProfile.id,
+            roomId: room101.id,
+            bedId: bedA.id,
+            bedLabel: 'Bed A',
+            allocatedByAdminId: warden.id,
+            isActive: true,
+          },
+        });
+      }
+    }
+  }
 
   // 5. Create Day Scholar Student
   const dayScholarUser = await prisma.user.upsert({

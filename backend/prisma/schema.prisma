@@ -159,7 +159,7 @@ model StudentProfile {
 
   // Relations
   user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bedAllocation  BedAllocation?
+  bedAllocations BedAllocation[]
   complaints     Complaint[]
   leaveRequests  LeaveRequest[]
   guestRequests  GuestRequest[]
@@ -215,17 +215,35 @@ model Room {
   updatedAt   DateTime  @updatedAt
 
   floor       Floor     @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  beds        Bed[]
   allocations BedAllocation[]
 
   @@unique([floorId, roomNumber])
   @@map("rooms")
 }
 
+model Bed {
+  id          String          @id @default(uuid()) @db.Uuid
+  roomId      String          @db.Uuid
+  bedLabel    String          @db.VarChar(20)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  room        Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  allocations BedAllocation[]
+
+  @@unique([roomId, bedLabel])
+  @@index([roomId])
+  @@map("beds")
+}
+
 model BedAllocation {
   id                 String         @id @default(uuid()) @db.Uuid
-  studentProfileId   String         @unique @db.Uuid
+  studentProfileId   String         @db.Uuid
+  bedId              String         @db.Uuid
   roomId             String         @db.Uuid
-  bedLabel           String         @db.VarChar(10)
+  bedLabel           String         @db.VarChar(20)
   allocatedFrom      DateTime       @default(now())
   allocatedTo        DateTime?
   isActive           Boolean        @default(true)
@@ -234,9 +252,12 @@ model BedAllocation {
   updatedAt          DateTime       @updatedAt
 
   studentProfile     StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Restrict)
+  bed                Bed            @relation(fields: [bedId], references: [id], onDelete: Restrict)
   room               Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
   allocatedBy        User           @relation("AllocatedByAdmin", fields: [allocatedByAdminId], references: [id])
 
+  @@index([studentProfileId])
+  @@index([bedId])
   @@index([roomId])
   @@index([isActive])
   @@map("bed_allocations")
