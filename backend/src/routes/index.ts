@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import healthRoute from './healthRoute';
 
+import authRoutes from './authRoutes';
+
 const router = Router();
 
 // Base /api/v1 routes
 router.use('/health', healthRoute);
-
-// Future Phase Modules will be mounted here:
-// router.use('/auth', authRoutes);
+router.use('/auth', authRoutes);
 // router.use('/students', studentRoutes);
 // router.use('/hostels', hostelRoutes);
 // router.use('/complaints', complaintRoutes);
